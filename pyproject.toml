@@ -1,0 +1,20 @@
+[project]
+name = "satopt"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Miklas Schuette", email = "schuettem@irs.uni-stuttgart.de" },
+    { name = "Nico Segreto", email = "segreto@theochem.uni-stuttgart.de" },
+    { name = "Lia Kruse", email = "kruse@theochem.uni-stuttgart.de" },
+]
+license = "MIT"
+
+requires-python = ">=3.12"
+dependencies = [
+    "matplotlib>=3.10.6",
+    "numpy>=2.3.3",
+    "pandas>=2.3.2",
+    "pygem>=0.3.0",
+    "ruff>=0.13.0",
+]

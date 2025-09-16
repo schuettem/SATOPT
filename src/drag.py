@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from  scipy.interpolate import interp1d
+from scipy.interpolate import interp1d
 
 
 def compute_aoa_and_area(panels, points, incident_velocity=np.array([-1, 0, 0])):
@@ -12,7 +12,7 @@ def compute_aoa_and_area(panels, points, incident_velocity=np.array([-1, 0, 0]))
     # Loop through the panels to compute the area
     areas = []
     aoas = []
-    for (i, panel) in enumerate(panels):
+    for i, panel in enumerate(panels):
         p1, p2, p3 = points[panel[0]], points[panel[1]], points[panel[2]]
         vec1 = p2 - p1
         vec2 = p3 - p1
@@ -38,10 +38,14 @@ def compute_aoa_and_area(panels, points, incident_velocity=np.array([-1, 0, 0]))
         # AoA > 0° means ram panel (normal opposes flow)
         # AoA < 0° means wake panel (normal aligned with flow)
         aoa = np.arcsin(-dot)  # Use arcsin with negative dot for correct sign
-        aoa = np.rad2deg(aoa)  # Convert to degrees (-90° to +90°)        # Determine wake/ram based on AoA sign
+        aoa = np.rad2deg(
+            aoa
+        )  # Convert to degrees (-90° to +90°)        # Determine wake/ram based on AoA sign
 
         if np.isnan(aoa):
-            raise ValueError(f"NaN AoA computed for panel {i}, points: {p1}, {p2}, {p3}")
+            raise ValueError(
+                f"NaN AoA computed for panel {i}, points: {p1}, {p2}, {p3}"
+            )
 
         aoas.append(aoa)
 
@@ -54,27 +58,26 @@ def load_c_d_lookup_table(csv_file):
     """
     try:
         df = pd.read_csv(csv_file)
-        c_d_ram_list = df['C_d_ram'].tolist()
-        c_d_wake_list = df['C_d_wake'].tolist()
-        aoa_list = df['AoA'].tolist()
+        c_d_ram_list = df["C_d_ram"].tolist()
+        c_d_wake_list = df["C_d_wake"].tolist()
+        aoa_list = df["AoA"].tolist()
 
-        ram_interpolator = interp1d(aoa_list,
-                                    c_d_ram_list,
-                                    bounds_error=False,
-                                    fill_value="extrapolate")
-        wake_interpolator = interp1d(aoa_list,
-                                     c_d_wake_list,
-                                     bounds_error=False,
-                                     fill_value="extrapolate")
+        ram_interpolator = interp1d(
+            aoa_list, c_d_ram_list, bounds_error=False, fill_value="extrapolate"
+        )
+        wake_interpolator = interp1d(
+            aoa_list, c_d_wake_list, bounds_error=False, fill_value="extrapolate"
+        )
         lookup_table = {
-            'ram': ram_interpolator,
-            'wake': wake_interpolator,
-            'aoa_range': (np.min(aoa_list), np.max(aoa_list))
+            "ram": ram_interpolator,
+            "wake": wake_interpolator,
+            "aoa_range": (np.min(aoa_list), np.max(aoa_list)),
         }
         return lookup_table
     except Exception as e:
         print(f"Error loading drag coefficient lookup table: {e}")
         return []
+
 
 def compute_drag(aoas, areas, lookup_table):
     """
@@ -86,9 +89,9 @@ def compute_drag(aoas, areas, lookup_table):
     total_drag = 0.0
     for aoa, area in zip(aoas, areas):
         if aoa < 0.0:  # Negative AoA indicates wake panel
-            c_d = lookup_table['wake'](aoa)
+            c_d = lookup_table["wake"](aoa)
         else:
-            c_d = lookup_table['ram'](aoa)
+            c_d = lookup_table["ram"](aoa)
 
         # Ensure c_d is a valid number
         if np.isnan(c_d) or np.isinf(c_d):
@@ -111,9 +114,9 @@ def compute_elementwise_drag(aoas, areas, lookup_table):
     drag_per_panel = []
     for aoa, area in zip(aoas, areas):
         if aoa < 0.0:  # Negative AoA indicates wake panel
-            c_d = lookup_table['wake'](aoa)
+            c_d = lookup_table["wake"](aoa)
         else:
-            c_d = lookup_table['ram'](aoa)
+            c_d = lookup_table["ram"](aoa)
 
         # Ensure c_d is a valid number
         if np.isnan(c_d) or np.isinf(c_d):
@@ -131,6 +134,6 @@ if __name__ == "__main__":
     print("Drag Coefficient Lookup Table Loaded: ", lookup_table)
     # Test the lookup table
     aoa = 2
-    wake_drag = lookup_table['wake'](aoa)
-    ram_drag = lookup_table['ram'](aoa)
+    wake_drag = lookup_table["wake"](aoa)
+    ram_drag = lookup_table["ram"](aoa)
     print(f"AoA: {aoa}°, C_d_wake: {wake_drag:.3f}, C_d_ram: {ram_drag:.3f}")
