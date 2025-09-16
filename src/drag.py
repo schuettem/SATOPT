@@ -127,7 +127,7 @@ def compute_elementwise_drag(aoas, areas, lookup_table):
 
 
 if __name__ == "__main__":
-    lookup_table = load_c_d_lookup_table('plots_csv/aerodynamic_coefficients/aerodynamic_coefficients_panel_method.csv')
+    lookup_table = load_c_d_lookup_table('~/SATOPT/aerodynamic_coefficients_panel_method.csv')
     print("Drag Coefficient Lookup Table Loaded: ", lookup_table)
     # Test the lookup table
     aoa = 2

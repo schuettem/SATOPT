@@ -1,8 +1,6 @@
 import numpy as np
-from scipy.optimize import minimize
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-import os
 
 # Import ffd.py from the same directory
 from ffd import FFD
@@ -166,7 +164,7 @@ def optimize_satellite(bbox_min, bbox_max, lattice_shape, L_max, V_min, n_iter, 
                     ffd.P[i, j, k, 1] = 0.0
 
     # Load drag coefficient lookup table
-    lookup_table = load_c_d_lookup_table('plots_csv/aerodynamic_coefficients/aerodynamic_coefficients_panel_method.csv')
+    lookup_table = load_c_d_lookup_table('~/SATOPT/aerodynamic_coefficients_panel_method.csv')
 
     # Create original mesh vertices (unit sphere (radius 0.5, centered at (0.5, 0.5, 0.5)))
     org_mesh_vertices, panels = create_sphere(n_phi, n_theta, radius, center)
@@ -373,7 +371,7 @@ if __name__ == "__main__":
     optimized_vertices, ffd, panels = optimize_satellite(bbox_min, bbox_max, lattice_shape, L_max, V_min, n_iter, radius, center, n_phi, n_theta)
 
     # Compute elementwise drag for the optimized mesh
-    lookup_table = load_c_d_lookup_table('plots_csv/aerodynamic_coefficients/aerodynamic_coefficients_panel_method.csv')
+    lookup_table = load_c_d_lookup_table('~/SATOPT/aerodynamic_coefficients_panel_method.csv')
     aoas, areas = compute_aoa_and_area(panels, optimized_vertices)
     elementwise_drag = compute_elementwise_drag(aoas, areas, lookup_table)
 

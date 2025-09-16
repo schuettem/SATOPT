@@ -1,6 +1,4 @@
-
 # Free Form Deformation
-
 import numpy as np
 from math import comb
 import matplotlib.pyplot as plt
