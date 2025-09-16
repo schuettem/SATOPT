@@ -1,18 +1,30 @@
 import numpy as np
-from scipy.optimize import minimize
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-import os
 
 # Import ffd.py from the same directory
 from ffd import FFD
+
 # Import from drag.py
-from drag import compute_aoa_and_area, load_c_d_lookup_table, compute_drag, compute_elementwise_drag
+from drag import (
+    compute_aoa_and_area,
+    load_c_d_lookup_table,
+    compute_drag,
+    compute_elementwise_drag,
+)
 from body import body_length, body_volume, create_sphere, verify_normals_outward
 
 
-def genetic_algorithm(objective_func, bounds, pop_size=50, generations=100, mutation_rate=0.1, crossover_rate=0.8,
-                     constraint_funcs=None, tournament_size=3):
+def genetic_algorithm(
+    objective_func,
+    bounds,
+    pop_size=50,
+    generations=100,
+    mutation_rate=0.1,
+    crossover_rate=0.8,
+    constraint_funcs=None,
+    tournament_size=3,
+):
     """
     Genetic Algorithm optimization with mutation and crossover rates.
 
@@ -32,7 +44,7 @@ def genetic_algorithm(objective_func, bounds, pop_size=50, generations=100, muta
     population = np.random.uniform(
         low=[b[0] for b in bounds],
         high=[b[1] for b in bounds],
-        size=(pop_size, n_params)
+        size=(pop_size, n_params),
     )
 
     def evaluate_individual(individual):
@@ -52,7 +64,9 @@ def genetic_algorithm(objective_func, bounds, pop_size=50, generations=100, muta
 
     def tournament_selection(population, fitnesses, tournament_size):
         """Select parent using tournament selection"""
-        tournament_indices = np.random.choice(len(population), tournament_size, replace=False)
+        tournament_indices = np.random.choice(
+            len(population), tournament_size, replace=False
+        )
         tournament_fitnesses = fitnesses[tournament_indices]
         winner_idx = tournament_indices[np.argmin(tournament_fitnesses)]
         return population[winner_idx].copy()
@@ -85,7 +99,7 @@ def genetic_algorithm(objective_func, bounds, pop_size=50, generations=100, muta
         return mutated
 
     # Evolution loop
-    best_fitness = float('inf')
+    best_fitness = float("inf")
     best_individual = None
 
     for generation in range(generations):
@@ -98,7 +112,9 @@ def genetic_algorithm(objective_func, bounds, pop_size=50, generations=100, muta
             best_fitness = fitnesses[current_best_idx]
             best_individual = population[current_best_idx].copy()
 
-        print(f"Generation {generation + 1}/{generations}: Best fitness = {best_fitness:.6f}")
+        print(
+            f"Generation {generation + 1}/{generations}: Best fitness = {best_fitness:.6f}"
+        )
 
         # Create new population
         new_population = []
@@ -127,7 +143,18 @@ def genetic_algorithm(objective_func, bounds, pop_size=50, generations=100, muta
     return best_individual, best_fitness
 
 
-def optimize_satellite(bbox_min, bbox_max, lattice_shape, L_max, V_min, n_iter, radius, center, n_phi=20, n_theta=20):
+def optimize_satellite(
+    bbox_min,
+    bbox_max,
+    lattice_shape,
+    L_max,
+    V_min,
+    n_iter,
+    radius,
+    center,
+    n_phi=20,
+    n_theta=20,
+):
     """
     Optimize the satellite mesh to minimize drag using Free-Form Deformation (FFD).
 
@@ -166,11 +193,12 @@ def optimize_satellite(bbox_min, bbox_max, lattice_shape, L_max, V_min, n_iter, 
                     ffd.P[i, j, k, 1] = 0.0
 
     # Load drag coefficient lookup table
-    lookup_table = load_c_d_lookup_table('plots_csv/aerodynamic_coefficients/aerodynamic_coefficients_panel_method.csv')
+    lookup_table = load_c_d_lookup_table(
+        "plots_csv/aerodynamic_coefficients/aerodynamic_coefficients_panel_method.csv"
+    )
 
     # Create original mesh vertices (unit sphere (radius 0.5, centered at (0.5, 0.5, 0.5)))
     org_mesh_vertices, panels = create_sphere(n_phi, n_theta, radius, center)
-
 
     def objective(control_points_flat):
         """
@@ -201,8 +229,8 @@ def optimize_satellite(bbox_min, bbox_max, lattice_shape, L_max, V_min, n_iter, 
         # Ensure the volume is greater than V_min
         return body_volume(optimized_vertices, panels) - V_min
 
-    constraints = [{'type': 'ineq', 'fun': length_constraint},
-                   {'type': 'ineq', 'fun': volume_constraint}]
+    # constraints = [{'type': 'ineq', 'fun': length_constraint},
+    #                {'type': 'ineq', 'fun': volume_constraint}]
 
     def create_symmetric_control_points(reduced_params):
         """
@@ -222,21 +250,23 @@ def optimize_satellite(bbox_min, bbox_max, lattice_shape, L_max, V_min, n_iter, 
 
                     if j < j_sym:  # Only optimize one half
                         # Set the control point from reduced parameters
-                        P_full[i, j, k, 0] = reduced_params[param_idx]     # X
-                        P_full[i, j, k, 1] = reduced_params[param_idx + 1] # Y
-                        P_full[i, j, k, 2] = reduced_params[param_idx + 2] # Z
+                        P_full[i, j, k, 0] = reduced_params[param_idx]  # X
+                        P_full[i, j, k, 1] = reduced_params[param_idx + 1]  # Y
+                        P_full[i, j, k, 2] = reduced_params[param_idx + 2]  # Z
 
                         # Mirror to symmetric position
-                        P_full[i, j_sym, k, 0] = reduced_params[param_idx]     # Same X
-                        P_full[i, j_sym, k, 1] = -reduced_params[param_idx + 1] # Opposite Y
+                        P_full[i, j_sym, k, 0] = reduced_params[param_idx]  # Same X
+                        P_full[i, j_sym, k, 1] = -reduced_params[
+                            param_idx + 1
+                        ]  # Opposite Y
                         P_full[i, j_sym, k, 2] = reduced_params[param_idx + 2]  # Same Z
 
                         param_idx += 3
                     elif j == j_sym:  # Center plane
                         # Only optimize X and Z, Y is always 0
-                        P_full[i, j, k, 0] = reduced_params[param_idx]     # X
-                        P_full[i, j, k, 1] = 0.0                          # Y = 0
-                        P_full[i, j, k, 2] = reduced_params[param_idx + 1] # Z
+                        P_full[i, j, k, 0] = reduced_params[param_idx]  # X
+                        P_full[i, j, k, 1] = 0.0  # Y = 0
+                        P_full[i, j, k, 2] = reduced_params[param_idx + 1]  # Z
 
                         param_idx += 2
 
@@ -273,8 +303,8 @@ def optimize_satellite(bbox_min, bbox_max, lattice_shape, L_max, V_min, n_iter, 
         optimized_vertices = ffd.deform_mesh(org_mesh_vertices)
         return body_volume(optimized_vertices, panels) - V_min
 
-    constraints = [{'type': 'ineq', 'fun': length_constraint_symmetric},
-                   {'type': 'ineq', 'fun': volume_constraint_symmetric}]
+    # constraints = [{'type': 'ineq', 'fun': length_constraint_symmetric},
+    #                {'type': 'ineq', 'fun': volume_constraint_symmetric}]
 
     # Create reduced initial guess (only independent parameters)
     l, m, n = lattice_shape
@@ -285,7 +315,9 @@ def optimize_satellite(bbox_min, bbox_max, lattice_shape, L_max, V_min, n_iter, 
                 j_sym = m - 1 - j
 
                 if j < j_sym:  # Only include one half
-                    reduced_x0.extend([ffd.P[i, j, k, 0], ffd.P[i, j, k, 1], ffd.P[i, j, k, 2]])
+                    reduced_x0.extend(
+                        [ffd.P[i, j, k, 0], ffd.P[i, j, k, 1], ffd.P[i, j, k, 2]]
+                    )
                 elif j == j_sym:  # Center plane - only X and Z
                     reduced_x0.extend([ffd.P[i, j, k, 0], ffd.P[i, j, k, 2]])
 
@@ -293,10 +325,15 @@ def optimize_satellite(bbox_min, bbox_max, lattice_shape, L_max, V_min, n_iter, 
 
     # Bounds: limit displacement from initial positions to prevent self-intersection
     bbox_size = np.array(bbox_max) - np.array(bbox_min)
-    max_displacement = 0.3 * min(bbox_size)  # 30% of smallest dimension for more freedom
+    max_displacement = 0.3 * min(
+        bbox_size
+    )  # 30% of smallest dimension for more freedom
 
     # Create bounds relative to initial control point positions for reduced parameters
-    bounds = [(reduced_x0[i] - max_displacement, reduced_x0[i] + max_displacement) for i in range(len(reduced_x0))]
+    bounds = [
+        (reduced_x0[i] - max_displacement, reduced_x0[i] + max_displacement)
+        for i in range(len(reduced_x0))
+    ]
 
     # Set up an iteration counter in this scope
     iter_slsqp = 0
@@ -319,8 +356,13 @@ def optimize_satellite(bbox_min, bbox_max, lattice_shape, L_max, V_min, n_iter, 
         actual_volume = body_volume(optimized_vertices, panels)
 
         print(f"[SLSQP iter {iter_slsqp:3d}] drag = {cost:.6f}")
-        print(f"    Length: {actual_length:.2f} (constraint: {length_val:.2f}, limit: {L_max})")
-        print(f"    Volume: {actual_volume:.2f} (constraint: {volume_val:.2f}, limit: {V_min})")
+        print(
+            f"    Length: {actual_length:.2f} (constraint: {length_val:.2f}, limit: {L_max})"
+        )
+        print(
+            f"    Volume: {actual_volume:.2f} (constraint: {volume_val:.2f}, limit: {V_min})"
+        )
+
     # Launch the optimization using Genetic Algorithm
     print("Starting Genetic Algorithm optimization...")
 
@@ -334,12 +376,12 @@ def optimize_satellite(bbox_min, bbox_max, lattice_shape, L_max, V_min, n_iter, 
     best_solution, best_fitness = genetic_algorithm(
         objective_func=objective_symmetric,
         bounds=bounds,
-        pop_size=30,           # Population size
-        generations=n_iter,    # Use n_iter as generations
-        mutation_rate=0.15,    # 15% mutation rate
-        crossover_rate=0.8,    # 80% crossover rate
+        pop_size=30,  # Population size
+        generations=n_iter,  # Use n_iter as generations
+        mutation_rate=0.15,  # 15% mutation rate
+        crossover_rate=0.8,  # 80% crossover rate
         constraint_funcs=[constraint_funcs_list],
-        tournament_size=3
+        tournament_size=3,
     )
 
     print(f"GA optimization completed. Best fitness: {best_fitness:.6f}")
@@ -350,6 +392,7 @@ def optimize_satellite(bbox_min, bbox_max, lattice_shape, L_max, V_min, n_iter, 
     optimized_mesh_vertices = ffd.deform_mesh(org_mesh_vertices)
 
     return optimized_mesh_vertices, ffd, panels
+
 
 if __name__ == "__main__":
     # Define a bounding box that properly contains the sphere
@@ -365,15 +408,30 @@ if __name__ == "__main__":
 
     # maximum body length and minimum volume constraints
     L_max = 5.0  # Reduced to match the new scale
-    V_min = 4/3 * np.pi * radius**3  # Reduced to match smaller sphere (4/3*π*1^3 ≈ 4.19)
+    V_min = (
+        4 / 3 * np.pi * radius**3
+    )  # Reduced to match smaller sphere (4/3*π*1^3 ≈ 4.19)
 
     # Optimize the satellite mesh
     n_phi, n_theta = 10, 10  # Higher resolution mesh
     n_iter = 1  # More generations for genetic algorithm
-    optimized_vertices, ffd, panels = optimize_satellite(bbox_min, bbox_max, lattice_shape, L_max, V_min, n_iter, radius, center, n_phi, n_theta)
+    optimized_vertices, ffd, panels = optimize_satellite(
+        bbox_min,
+        bbox_max,
+        lattice_shape,
+        L_max,
+        V_min,
+        n_iter,
+        radius,
+        center,
+        n_phi,
+        n_theta,
+    )
 
     # Compute elementwise drag for the optimized mesh
-    lookup_table = load_c_d_lookup_table('plots_csv/aerodynamic_coefficients/aerodynamic_coefficients_panel_method.csv')
+    lookup_table = load_c_d_lookup_table(
+        "plots_csv/aerodynamic_coefficients/aerodynamic_coefficients_panel_method.csv"
+    )
     aoas, areas = compute_aoa_and_area(panels, optimized_vertices)
     elementwise_drag = compute_elementwise_drag(aoas, areas, lookup_table)
 
@@ -385,22 +443,24 @@ if __name__ == "__main__":
     fig = plt.figure(figsize=(15, 5))
 
     # First subplot: Optimized mesh with control points
-    ax1 = fig.add_subplot(131, projection='3d')
+    ax1 = fig.add_subplot(131, projection="3d")
     x = optimized_vertices[:, 0].reshape(n_phi, n_theta)
     y = optimized_vertices[:, 1].reshape(n_phi, n_theta)
     z = optimized_vertices[:, 2].reshape(n_phi, n_theta)
-    ax1.plot_surface(x, y, z, color='blue', alpha=0.7, label='Optimized Mesh')
-    ax1.set_xlabel('X')
-    ax1.set_ylabel('Y')
-    ax1.set_zlabel('Z')
-    ax1.set_title('Optimized Mesh with Control Points')
+    ax1.plot_surface(x, y, z, color="blue", alpha=0.7, label="Optimized Mesh")
+    ax1.set_xlabel("X")
+    ax1.set_ylabel("Y")
+    ax1.set_zlabel("Z")
+    ax1.set_title("Optimized Mesh with Control Points")
 
     # Plot the control points
-    ax1.scatter(ffd.P[:, :, :, 0], ffd.P[:, :, :, 1], ffd.P[:, :, :, 2], color='green', s=50)
+    ax1.scatter(
+        ffd.P[:, :, :, 0], ffd.P[:, :, :, 1], ffd.P[:, :, :, 2], color="green", s=50
+    )
     ax1.set_box_aspect([1, 1, 1])  # Equal aspect
 
     # Second subplot: Surface colored by elementwise drag
-    ax2 = fig.add_subplot(132, projection='3d')
+    ax2 = fig.add_subplot(132, projection="3d")
 
     # Create triangles for 3D plotting
     triangles = []
@@ -408,7 +468,11 @@ if __name__ == "__main__":
 
     for i, panel in enumerate(panels):
         # Get triangle vertices
-        p1, p2, p3 = optimized_vertices[panel[0]], optimized_vertices[panel[1]], optimized_vertices[panel[2]]
+        p1, p2, p3 = (
+            optimized_vertices[panel[0]],
+            optimized_vertices[panel[1]],
+            optimized_vertices[panel[2]],
+        )
         triangle = [p1, p2, p3]
         triangles.append(triangle)
 
@@ -419,7 +483,7 @@ if __name__ == "__main__":
         colors.append(color)
 
     # Create 3D polygon collection
-    poly3d = Poly3DCollection(triangles, facecolors=colors, edgecolors='none')
+    poly3d = Poly3DCollection(triangles, facecolors=colors, edgecolors="none")
     ax2.add_collection3d(poly3d)
 
     # Set axis limits based on optimized vertices
@@ -427,23 +491,30 @@ if __name__ == "__main__":
     ax2.set_ylim(np.min(optimized_vertices[:, 1]), np.max(optimized_vertices[:, 1]))
     ax2.set_zlim(np.min(optimized_vertices[:, 2]), np.max(optimized_vertices[:, 2]))
 
-    ax2.set_xlabel('X')
-    ax2.set_ylabel('Y')
-    ax2.set_zlabel('Z')
-    ax2.set_title('Surface Colored by Drag')
+    ax2.set_xlabel("X")
+    ax2.set_ylabel("Y")
+    ax2.set_zlabel("Z")
+    ax2.set_title("Surface Colored by Drag")
     ax2.set_box_aspect([1, 1, 1])  # Equal aspect
 
     # Add colorbar for aoas
-    sm = plt.cm.ScalarMappable(cmap=plt.cm.viridis, norm=plt.Normalize(vmin=np.min(elementwise_drag), vmax=np.max(elementwise_drag)))
+    sm = plt.cm.ScalarMappable(
+        cmap=plt.cm.viridis,
+        norm=plt.Normalize(
+            vmin=np.min(elementwise_drag), vmax=np.max(elementwise_drag)
+        ),
+    )
     sm.set_array([])
     cbar = plt.colorbar(sm, ax=ax2, shrink=0.5, aspect=10)
-    cbar.set_label('Drag per Panel')
+    cbar.set_label("Drag per Panel")
 
     # Plot the angle of attack as a color
-    aoas, areas = compute_aoa_and_area(panels, optimized_vertices, incident_velocity=np.array([-1, 0, 0]))
+    aoas, areas = compute_aoa_and_area(
+        panels, optimized_vertices, incident_velocity=np.array([-1, 0, 0])
+    )
 
     # Second subplot: Surface colored by aoas
-    ax3 = fig.add_subplot(133, projection='3d')
+    ax3 = fig.add_subplot(133, projection="3d")
 
     # Create triangles for 3D plotting
     colors_aoas = []
@@ -455,14 +526,16 @@ if __name__ == "__main__":
         colors_aoas.append(color)
 
     # Create 3D polygon collection
-    poly3d = Poly3DCollection(triangles, facecolors=colors_aoas, edgecolors='none')
+    poly3d = Poly3DCollection(triangles, facecolors=colors_aoas, edgecolors="none")
     ax3.add_collection3d(poly3d)
 
     # Add colorbar for drag values
-    sm = plt.cm.ScalarMappable(cmap=plt.cm.viridis, norm=plt.Normalize(vmin=np.min(aoas), vmax=np.max(aoas)))
+    sm = plt.cm.ScalarMappable(
+        cmap=plt.cm.viridis, norm=plt.Normalize(vmin=np.min(aoas), vmax=np.max(aoas))
+    )
     sm.set_array([])
     cbar = plt.colorbar(sm, ax=ax3, shrink=0.5, aspect=10)
-    cbar.set_label('AoA per Panel')
+    cbar.set_label("AoA per Panel")
 
     plt.tight_layout()
 

@@ -1,4 +1,3 @@
-
 # Free Form Deformation
 
 import numpy as np
@@ -8,17 +7,18 @@ import matplotlib.pyplot as plt
 
 def bernsetein(n, i, t):
     """
-        Compute the i-th Bernstein basis polynomial of degree n at t.
+    Compute the i-th Bernstein basis polynomial of degree n at t.
     """
-    return comb(n, i) * (t ** i) * ((1 - t) ** (n - i))
+    return comb(n, i) * (t**i) * ((1 - t) ** (n - i))
+
 
 class FFD:
     def __init__(self, bbox_min, bbox_max, lattice_shape):
         """
-            bbox_min, bbox_max: array-like of shape (3,)
-                Minimum and maximum corners of the deformation lattice.
-            lattice_shape: tuple (l+1, m+1, n+1)
-                Number of control points in each dimension
+        bbox_min, bbox_max: array-like of shape (3,)
+            Minimum and maximum corners of the deformation lattice.
+        lattice_shape: tuple (l+1, m+1, n+1)
+            Number of control points in each dimension
         """
         self.bmin = np.array(bbox_min, dtype=np.float32)
         self.bmax = np.array(bbox_max, dtype=np.float32)
@@ -39,15 +39,15 @@ class FFD:
 
     def to_parametric(self, X):
         """
-            Map a point X in global coords to (s, t, u) in [0, 1]^3.
-            assuming an axis-aligned lattice.
+        Map a point X in global coords to (s, t, u) in [0, 1]^3.
+        assuming an axis-aligned lattice.
         """
         return (X - self.bmin) / (self.bmax - self.bmin)
 
     def deform_point(self, s, t, u):
         """
-            Apply the FFD blend to paramtric coords (s,t,u).
-            Returns the the deformed global-space position
+        Apply the FFD blend to paramtric coords (s,t,u).
+        Returns the the deformed global-space position
         """
         Xp = np.zeros(3, dtype=np.float32)
         for i in range(self.l + 1):
@@ -61,14 +61,15 @@ class FFD:
 
     def deform_mesh(self, vertices):
         """
-            vertices: (N, 3) array of mesh points
-            Returns deformed_vertices: (N, 3)
+        vertices: (N, 3) array of mesh points
+        Returns deformed_vertices: (N, 3)
         """
         deformed_vertices = np.zeros_like(vertices, dtype=np.float32)
         for idx, X in enumerate(vertices):
             s, t, u = self.to_parametric(X)
             deformed_vertices[idx] = self.deform_point(s, t, u)
         return deformed_vertices
+
 
 # Example usage:
 if __name__ == "__main__":
@@ -80,7 +81,7 @@ if __name__ == "__main__":
     ffd = FFD(bbox_min, bbox_max, lattice_shape=(4, 4, 4))
 
     # A simple mesh: unit sphere
-    phi, theta = np.mgrid[0:np.pi:20j, 0:2 * np.pi:20j]
+    phi, theta = np.mgrid[0 : np.pi : 20j, 0 : 2 * np.pi : 20j]
     x = 0.5 + 0.5 * np.sin(phi) * np.cos(theta)
     y = 0.5 + 0.5 * np.sin(phi) * np.sin(theta)
     z = 0.5 + 0.5 * np.cos(phi)
@@ -88,11 +89,17 @@ if __name__ == "__main__":
 
     # Plot the original mesh
     fig = plt.figure()
-    ax = fig.add_subplot(121, projection='3d')
-    ax.plot_surface(x, y, z, alpha=0.7, color='blue', label='Original Mesh')
-    ax.set_title('Original Mesh')
+    ax = fig.add_subplot(121, projection="3d")
+    ax.plot_surface(x, y, z, alpha=0.7, color="blue", label="Original Mesh")
+    ax.set_title("Original Mesh")
     # plot the control points
-    ax.scatter(ffd.P[:, :, :, 0], ffd.P[:, :, :, 1], ffd.P[:, :, :, 2], color='green', label='Control Points')
+    ax.scatter(
+        ffd.P[:, :, :, 0],
+        ffd.P[:, :, :, 1],
+        ffd.P[:, :, :, 2],
+        color="green",
+        label="Control Points",
+    )
 
     # Move one control point to deform the mesh
     ffd.P[1, 1, 3] += np.array([0.2, 0.2, 5], dtype=np.float32)
@@ -109,16 +116,20 @@ if __name__ == "__main__":
     z_new = new_verts[:, 2].reshape(phi.shape)
 
     # Plot the deformed mesh
-    ax2 = fig.add_subplot(122, projection='3d')
-    ax2.plot_surface(x_new, y_new, z_new, alpha=0.7, color='red', label='Deformed Mesh')
-    ax2.set_title('Deformed Mesh')
+    ax2 = fig.add_subplot(122, projection="3d")
+    ax2.plot_surface(x_new, y_new, z_new, alpha=0.7, color="red", label="Deformed Mesh")
+    ax2.set_title("Deformed Mesh")
     # plot the control points
-    ax2.scatter(ffd.P[:, :, :, 0], ffd.P[:, :, :, 1], ffd.P[:, :, :, 2], color='green', label='Control Points')
+    ax2.scatter(
+        ffd.P[:, :, :, 0],
+        ffd.P[:, :, :, 1],
+        ffd.P[:, :, :, 2],
+        color="green",
+        label="Control Points",
+    )
 
     # Set equal aspect ratio for both plots
-    ax.set_box_aspect([1,1,1])  # Add this line for the first subplot
-    ax2.set_box_aspect([1,1,1])  # Add this line for the second subplot
+    ax.set_box_aspect([1, 1, 1])  # Add this line for the first subplot
+    ax2.set_box_aspect([1, 1, 1])  # Add this line for the second subplot
 
     plt.show()
-
-
