@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def body_length(vertices):
     xs = vertices[:, 0]
     return np.max(xs) - np.min(xs)
@@ -38,10 +39,10 @@ def create_sphere(n_phi, n_theta, radius=0.5, center=(0.5, 0.5, 0.5)):
     # Create phi from 0 to pi (includes both poles)
     phi = np.linspace(0, np.pi, n_phi)
     # Create theta from 0 to 2*pi but exclude the endpoint to avoid duplication
-    theta = np.linspace(0, 2*np.pi, n_theta, endpoint=False)
+    theta = np.linspace(0, 2 * np.pi, n_theta, endpoint=False)
 
     # Create meshgrid
-    phi_grid, theta_grid = np.meshgrid(phi, theta, indexing='ij')
+    phi_grid, theta_grid = np.meshgrid(phi, theta, indexing="ij")
 
     x = center[0] + radius * np.cos(phi_grid)
     y = center[1] + radius * np.sin(phi_grid) * np.cos(theta_grid)

@@ -6,14 +6,17 @@ from pygem import FFD
 # Import from drag.py
 from drag import compute_aoa_and_area, load_c_d_lookup_table, compute_drag
 
+
 def create_sphere(n_phi, n_theta, radius=0.5, center=(0.5, 0.5, 0.5)):
     """
     Create a mesh of a sphere with given resolution and radius.
     Create triangular panels for the sphere mesh containing the ids of the points forming each panel.
     """
-    phi, theta = np.mgrid[0:np.pi:complex(0, n_phi), 0:2 * np.pi:complex(0, n_theta)]
+    phi, theta = np.mgrid[
+        0 : np.pi : complex(0, n_phi), 0 : 2 * np.pi : complex(0, n_theta)
+    ]
 
-    x =  center[2] + radius * np.cos(phi)
+    x = center[2] + radius * np.cos(phi)
     y = center[0] + radius * np.sin(phi) * np.cos(theta)
     z = center[1] + radius * np.sin(phi) * np.sin(theta)
     mesh_vertices = np.vstack([x.ravel(), y.ravel(), z.ravel()]).T
@@ -75,7 +78,18 @@ def body_length(vertices):
     return np.max(xs) - np.min(xs)
 
 
-def optimize_satellite_pygem(bbox_min, bbox_max, lattice_shape, L_max, V_min, n_iter, radius, center, n_phi=20, n_theta=20):
+def optimize_satellite_pygem(
+    bbox_min,
+    bbox_max,
+    lattice_shape,
+    L_max,
+    V_min,
+    n_iter,
+    radius,
+    center,
+    n_phi=20,
+    n_theta=20,
+):
     """
     Optimize satellite using PyGem FFD with volume preservation
     """
@@ -88,7 +102,9 @@ def optimize_satellite_pygem(bbox_min, bbox_max, lattice_shape, L_max, V_min, n_
     ffd.n_control_points = lattice_shape
 
     # Load drag coefficient lookup table
-    lookup_table = load_c_d_lookup_table('plots_csv/aerodynamic_coefficients/aerodynamic_coefficients_panel_method.csv')
+    lookup_table = load_c_d_lookup_table(
+        "plots_csv/aerodynamic_coefficients/aerodynamic_coefficients_panel_method.csv"
+    )
 
     # Create original mesh vertices
     org_mesh_vertices, panels = create_sphere(n_phi, n_theta, radius, center)
@@ -102,9 +118,18 @@ def optimize_satellite_pygem(bbox_min, bbox_max, lattice_shape, L_max, V_min, n_
         Objective function with PyGem FFD
         """
         # Apply displacement to control points
-        ffd.array_mu_x = control_points_displacement[:lattice_shape[0]*lattice_shape[1]*lattice_shape[2]].reshape(lattice_shape)
-        ffd.array_mu_y = control_points_displacement[lattice_shape[0]*lattice_shape[1]*lattice_shape[2]:2*lattice_shape[0]*lattice_shape[1]*lattice_shape[2]].reshape(lattice_shape)
-        ffd.array_mu_z = control_points_displacement[2*lattice_shape[0]*lattice_shape[1]*lattice_shape[2]:].reshape(lattice_shape)
+        ffd.array_mu_x = control_points_displacement[
+            : lattice_shape[0] * lattice_shape[1] * lattice_shape[2]
+        ].reshape(lattice_shape)
+        ffd.array_mu_y = control_points_displacement[
+            lattice_shape[0] * lattice_shape[1] * lattice_shape[2] : 2
+            * lattice_shape[0]
+            * lattice_shape[1]
+            * lattice_shape[2]
+        ].reshape(lattice_shape)
+        ffd.array_mu_z = control_points_displacement[
+            2 * lattice_shape[0] * lattice_shape[1] * lattice_shape[2] :
+        ].reshape(lattice_shape)
 
         # Deform mesh
         deformed_vertices = ffd(org_mesh_vertices)
@@ -123,9 +148,18 @@ def optimize_satellite_pygem(bbox_min, bbox_max, lattice_shape, L_max, V_min, n_
         Constraint to preserve volume using PyGem
         """
         # Apply displacement
-        ffd.array_mu_x = control_points_displacement[:lattice_shape[0]*lattice_shape[1]*lattice_shape[2]].reshape(lattice_shape)
-        ffd.array_mu_y = control_points_displacement[lattice_shape[0]*lattice_shape[1]*lattice_shape[2]:2*lattice_shape[0]*lattice_shape[1]*lattice_shape[2]].reshape(lattice_shape)
-        ffd.array_mu_z = control_points_displacement[2*lattice_shape[0]*lattice_shape[1]*lattice_shape[2]:].reshape(lattice_shape)
+        ffd.array_mu_x = control_points_displacement[
+            : lattice_shape[0] * lattice_shape[1] * lattice_shape[2]
+        ].reshape(lattice_shape)
+        ffd.array_mu_y = control_points_displacement[
+            lattice_shape[0] * lattice_shape[1] * lattice_shape[2] : 2
+            * lattice_shape[0]
+            * lattice_shape[1]
+            * lattice_shape[2]
+        ].reshape(lattice_shape)
+        ffd.array_mu_z = control_points_displacement[
+            2 * lattice_shape[0] * lattice_shape[1] * lattice_shape[2] :
+        ].reshape(lattice_shape)
 
         # Deform mesh
         deformed_vertices = ffd(org_mesh_vertices)
@@ -141,9 +175,18 @@ def optimize_satellite_pygem(bbox_min, bbox_max, lattice_shape, L_max, V_min, n_
     # Length constraint
     def length_constraint(control_points_displacement):
         # Apply displacement
-        ffd.array_mu_x = control_points_displacement[:lattice_shape[0]*lattice_shape[1]*lattice_shape[2]].reshape(lattice_shape)
-        ffd.array_mu_y = control_points_displacement[lattice_shape[0]*lattice_shape[1]*lattice_shape[2]:2*lattice_shape[0]*lattice_shape[1]*lattice_shape[2]].reshape(lattice_shape)
-        ffd.array_mu_z = control_points_displacement[2*lattice_shape[0]*lattice_shape[1]*lattice_shape[2]:].reshape(lattice_shape)
+        ffd.array_mu_x = control_points_displacement[
+            : lattice_shape[0] * lattice_shape[1] * lattice_shape[2]
+        ].reshape(lattice_shape)
+        ffd.array_mu_y = control_points_displacement[
+            lattice_shape[0] * lattice_shape[1] * lattice_shape[2] : 2
+            * lattice_shape[0]
+            * lattice_shape[1]
+            * lattice_shape[2]
+        ].reshape(lattice_shape)
+        ffd.array_mu_z = control_points_displacement[
+            2 * lattice_shape[0] * lattice_shape[1] * lattice_shape[2] :
+        ].reshape(lattice_shape)
 
         # Deform mesh
         deformed_vertices = ffd(org_mesh_vertices)
@@ -152,8 +195,8 @@ def optimize_satellite_pygem(bbox_min, bbox_max, lattice_shape, L_max, V_min, n_
         return L_max - body_length(deformed_vertices)
 
     constraints = [
-        {'type': 'ineq', 'fun': volume_constraint},
-        {'type': 'ineq', 'fun': length_constraint}
+        {"type": "ineq", "fun": volume_constraint},
+        {"type": "ineq", "fun": length_constraint},
     ]
 
     # Initial guess: no displacement
@@ -168,14 +211,17 @@ def optimize_satellite_pygem(bbox_min, bbox_max, lattice_shape, L_max, V_min, n_
 
     # Optimization callback
     iter_count = 0
+
     def callback(xk):
         nonlocal iter_count
         iter_count += 1
 
         # Apply displacement for evaluation
         ffd.array_mu_x = xk[:n_control_points].reshape(lattice_shape)
-        ffd.array_mu_y = xk[n_control_points:2*n_control_points].reshape(lattice_shape)
-        ffd.array_mu_z = xk[2*n_control_points:].reshape(lattice_shape)
+        ffd.array_mu_y = xk[n_control_points : 2 * n_control_points].reshape(
+            lattice_shape
+        )
+        ffd.array_mu_z = xk[2 * n_control_points :].reshape(lattice_shape)
 
         deformed_vertices = ffd(org_mesh_vertices)
 
@@ -183,31 +229,32 @@ def optimize_satellite_pygem(bbox_min, bbox_max, lattice_shape, L_max, V_min, n_
         current_volume = body_volume(deformed_vertices, panels)
         current_length = body_length(deformed_vertices)
 
-        print(f"[Iter {iter_count:3d}] Drag: {current_drag:.6f}, Volume: {current_volume:.2f}, Length: {current_length:.2f}")
+        print(
+            f"[Iter {iter_count:3d}] Drag: {current_drag:.6f}, Volume: {current_volume:.2f}, Length: {current_length:.2f}"
+        )
 
     # Run optimization
     result = minimize(
         objective,
         x0,
-        method='SLSQP',
+        method="SLSQP",
         bounds=bounds,
         constraints=constraints,
         callback=callback,
-        options={
-            'maxiter': n_iter,
-            'ftol': 1e-6,
-            'disp': True
-        }
+        options={"maxiter": n_iter, "ftol": 1e-6, "disp": True},
     )
 
     # Apply final result
     ffd.array_mu_x = result.x[:n_control_points].reshape(lattice_shape)
-    ffd.array_mu_y = result.x[n_control_points:2*n_control_points].reshape(lattice_shape)
-    ffd.array_mu_z = result.x[2*n_control_points:].reshape(lattice_shape)
+    ffd.array_mu_y = result.x[n_control_points : 2 * n_control_points].reshape(
+        lattice_shape
+    )
+    ffd.array_mu_z = result.x[2 * n_control_points :].reshape(lattice_shape)
 
     optimized_vertices = ffd(org_mesh_vertices)
 
     return optimized_vertices, ffd
+
 
 if __name__ == "__main__":
     # Define bounding box
@@ -231,7 +278,16 @@ if __name__ == "__main__":
 
     # Run optimization with PyGem
     optimized_vertices, ffd_instance = optimize_satellite_pygem(
-        bbox_min, bbox_max, lattice_shape, L_max, V_min, n_iter, radius, center, n_phi, n_theta
+        bbox_min,
+        bbox_max,
+        lattice_shape,
+        L_max,
+        V_min,
+        n_iter,
+        radius,
+        center,
+        n_phi,
+        n_theta,
     )
 
     # Create original sphere for comparison
@@ -241,22 +297,22 @@ if __name__ == "__main__":
     fig = plt.figure(figsize=(12, 5))
 
     # Original
-    ax1 = fig.add_subplot(121, projection='3d')
+    ax1 = fig.add_subplot(121, projection="3d")
     x_orig = org_vertices[:, 0].reshape(n_phi, n_theta)
     y_orig = org_vertices[:, 1].reshape(n_phi, n_theta)
     z_orig = org_vertices[:, 2].reshape(n_phi, n_theta)
-    ax1.plot_wireframe(x_orig, y_orig, z_orig, color='blue', alpha=0.7)
-    ax1.set_title('Original Sphere')
-    ax1.set_box_aspect([1,1,1])
+    ax1.plot_wireframe(x_orig, y_orig, z_orig, color="blue", alpha=0.7)
+    ax1.set_title("Original Sphere")
+    ax1.set_box_aspect([1, 1, 1])
 
     # Optimized
-    ax2 = fig.add_subplot(122, projection='3d')
+    ax2 = fig.add_subplot(122, projection="3d")
     x_opt = optimized_vertices[:, 0].reshape(n_phi, n_theta)
     y_opt = optimized_vertices[:, 1].reshape(n_phi, n_theta)
     z_opt = optimized_vertices[:, 2].reshape(n_phi, n_theta)
-    ax2.plot_wireframe(x_opt, y_opt, z_opt, color='red', alpha=0.7)
-    ax2.set_title('Volume-Preserved Optimized')
-    ax2.set_box_aspect([1,1,1])
+    ax2.plot_wireframe(x_opt, y_opt, z_opt, color="red", alpha=0.7)
+    ax2.set_title("Volume-Preserved Optimized")
+    ax2.set_box_aspect([1, 1, 1])
 
     plt.tight_layout()
     plt.show()
