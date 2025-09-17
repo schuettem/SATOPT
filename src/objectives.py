@@ -2,7 +2,18 @@ from drag import compute_drag, compute_aoa_and_area
 import numpy as np
 
 
-def objective_free(x, init_mesh, ffd, lookup_t):
+def volum_penalty(mesh, cutoff, penalty_faktor):
+    penalty = 0
+    if mesh.volume < cutoff:
+        penalty = penalty_faktor
+        
+    return penalty
+
+PENALTIES = {
+    "volume": volum_penalty
+}
+
+def objective_free(x, init_mesh, ffd, lookup_t, penalty_fns: list=[]):
     shape = list(ffd.array_mu_x.shape)
     shape.extend([3])
     x = np.array(x)
@@ -16,15 +27,19 @@ def objective_free(x, init_mesh, ffd, lookup_t):
     new_mesh = init_mesh
     new_mesh.vertices = new_vertices
 
-    if new_mesh.volume < 3.5:
-        return 10**2
-    else:
-        aoas, areas = compute_aoa_and_area(panels=new_mesh.faces, points=new_vertices)
-        drag = compute_drag(aoas=aoas, areas=areas, lookup_table=lookup_t)
-        return drag
+    aoas, areas = compute_aoa_and_area(panels=new_mesh.faces, points=new_vertices)
+    drag = compute_drag(aoas=aoas, areas=areas, lookup_table=lookup_t)
+    
+    penalty = 0
+    for peanlty_fn in penalty_fns:
+        penalty += peanlty_fn(new_mesh, 3.5, 10**2)
+        
+    drag += penalty
+    
+    return drag
 
 
-def objective_x(x, init_mesh, ffd, lookup_t):
+def objective_x(x, init_mesh, ffd, lookup_t, penalty_fns: list=[]):
     shape = list(ffd.array_mu_x.shape)
     x = np.array(x)
     x = x.reshape(shape)
@@ -35,15 +50,19 @@ def objective_x(x, init_mesh, ffd, lookup_t):
     new_mesh = init_mesh
     new_mesh.vertices = new_vertices
 
-    if new_mesh.volume < 3.5:
-        return 10**2
-    else:
-        aoas, areas = compute_aoa_and_area(panels=new_mesh.faces, points=new_vertices)
-        drag = compute_drag(aoas=aoas, areas=areas, lookup_table=lookup_t)
-        return drag
+    aoas, areas = compute_aoa_and_area(panels=new_mesh.faces, points=new_vertices)
+    drag = compute_drag(aoas=aoas, areas=areas, lookup_table=lookup_t)
+
+    penalty = 0
+    for peanlty_fn in penalty_fns:
+        penalty += peanlty_fn(new_mesh, 3.5, 10**2)
+        
+    drag += penalty
+    
+    return drag
 
 
-objective_fn = {
+OBJECTIVES = {
     "free": objective_free,
     "x": objective_x,
 }
@@ -86,7 +105,8 @@ def deform_mesh_x(x, mesh, ffd, lookup_t):
     return new_mesh, drag
 
 
-deformatoin_fn = {
+
+DEFORMATIONS = {
     "free": deform_mesh,
     "x": deform_mesh_x,
 }
