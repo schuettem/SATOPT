@@ -3,10 +3,16 @@ from pygem import FFD
 from drag import load_c_d_lookup_table
 from skopt import gp_minimize
 from functools import partial
-from objectives import objective_fn, deformatoin_fn
+from objectives import OBJECTIVES, DEFORMATIONS, PENALTIES
 
 
-def run(objective: str = "x", radius: float = 1.0):
+def run(
+    objective: str = "x",
+    radius: float = 1.0,
+    displacement_range: tuple=(0, 2),
+    n_calls: int=100,
+    penalties: list=["volume"],
+):
     length = radius * 2.5
 
     mesh = trimesh.creation.icosphere(subdivisions=2, radius=1.0)
@@ -17,16 +23,21 @@ def run(objective: str = "x", radius: float = 1.0):
 
     lookup_t = load_c_d_lookup_table("aerodynamic_coefficients_panel_method.csv")
 
-    fn = partial(objective_fn[objective], init_mesh=mesh, ffd=ffd, lookup_t=lookup_t)
+
+    penalty_fns = []
+    for penalty in penalties:
+        penalty_fns.append(PENALTIES[penalty])
+    
+    fn = partial(OBJECTIVES[objective], init_mesh=mesh, ffd=ffd, lookup_t=lookup_t, penalty_fns=penalty_fns)
 
     if objective == "free":
-        x = [(0.0, 3.0)] * ffd.array_mu_x.flatten().shape[0] * 3
+        x = [displacement_range] * ffd.array_mu_x.flatten().shape[0] * 3
     elif objective == "x":
-        x = [(0.0, 3.0)] * ffd.array_mu_x.flatten().shape[0]
+        x = [displacement_range] * ffd.array_mu_x.flatten().shape[0]
 
-    res = gp_minimize(fn, x, n_calls=100)
+    res = gp_minimize(fn, x, n_calls=n_calls)
 
-    mesh, drag = deformatoin_fn[objective](
+    mesh, drag = DEFORMATIONS[objective](
         x=res.x, mesh=mesh, ffd=ffd, lookup_t=lookup_t
     )
 
