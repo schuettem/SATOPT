@@ -1,5 +1,5 @@
 import numpy as np
-from ffd import FFD
+from satopt.bla.ffd import FFD
 
 # Create a simple test case
 bbox_min = [-1, -1, -1]

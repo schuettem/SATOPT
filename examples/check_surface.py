@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 # Import from optimize_satellite.py
-from body import create_sphere, verify_normals_outward
-from drag import compute_aoa_and_area
+from satopt.bla.body import create_sphere, verify_normals_outward
+from satopt.bla.drag import compute_aoa_and_area
 
 
 if __name__ == "__main__":
