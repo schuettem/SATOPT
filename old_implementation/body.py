@@ -76,7 +76,6 @@ def create_sphere(n_phi, n_theta, radius=0.5, center=(0.5, 0.5, 0.5)):
     return optimized_vertices, panels
 
 
-
 def verify_normals_outward(vertices, panels, center=(0.0, 0.0, 0.0)):
     """
     Verify that mesh normals point outward from the center

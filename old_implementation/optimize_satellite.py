@@ -6,7 +6,6 @@ from satopt.bla.ffd import FFD
 # Import from drag.py
 from satopt.bla.drag import (
     compute_aoa_and_area,
-    load_c_d_lookup_table,
     compute_drag,
 )
 from satopt.bla.body import body_length, body_volume, create_sphere
@@ -192,7 +191,6 @@ def optimize_satellite(
 
     # Create original mesh vertices (unit sphere (radius 0.5, centered at (0.5, 0.5, 0.5)))
     org_mesh_vertices, panels = create_sphere(n_phi, n_theta, radius, center)
-
 
     # # Constraints: body length and volume
     # def length_constraint(flat_P):
