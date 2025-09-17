@@ -13,6 +13,7 @@ def run(
     n_calls: int=100,
     penalties: list=["volume"],
 ):
+
     length = radius * 2.5
 
     mesh = trimesh.creation.icosphere(subdivisions=2, radius=1.0)
