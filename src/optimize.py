@@ -7,20 +7,20 @@ from objectives import OBJECTIVES, DEFORMATIONS, PENALTIES
 
 
 def run(
-    objective: str = "x",
+    objective: str,
     radius: float = 1.0,
     displacement_range: tuple=(0, 2),
     n_calls: int=100,
-    penalties: list=["volume"],
+    penalties: list=[],
 ):
 
-    length = radius * 2.5
+    length = radius * 3
 
     mesh = trimesh.creation.icosphere(subdivisions=2, radius=1.0)
 
     ffd = FFD([2, 2, 2])
     ffd.box_length = [length, length, length]
-    ffd.box_origin = [-length / 2, -length / 2, -length / 2]
+    ffd.box_origin = [-length/2, -length/2, -length/2]
 
     lookup_t = load_c_d_lookup_table("aerodynamic_coefficients_panel_method.csv")
 
@@ -33,7 +33,7 @@ def run(
 
     if objective == "free":
         x = [displacement_range] * ffd.array_mu_x.flatten().shape[0] * 3
-    elif objective == "x":
+    elif objective in ["x", "y", "z"]:
         x = [displacement_range] * ffd.array_mu_x.flatten().shape[0]
 
     res = gp_minimize(fn, x, n_calls=n_calls)
@@ -42,4 +42,4 @@ def run(
         x=res.x, mesh=mesh, ffd=ffd, lookup_t=lookup_t
     )
 
-    return mesh, drag
+    return mesh, drag, ffd
