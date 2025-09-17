@@ -193,34 +193,19 @@ def optimize_satellite(
     # Create original mesh vertices (unit sphere (radius 0.5, centered at (0.5, 0.5, 0.5)))
     org_mesh_vertices, panels = create_sphere(n_phi, n_theta, radius, center)
 
-    def objective(control_points_flat):
-        """
-        Objective function to minimize the drag of the satellite mesh.
-        control_points_flat: flattened array of control points.
-        """
-        ffd.set_flat_control_points(control_points_flat)
-        deformed_vertices = ffd.deform_mesh(org_mesh_vertices)
 
-        # Compute AoA, areas
-        aoas, areas = compute_aoa_and_area(panels, deformed_vertices)
+    # # Constraints: body length and volume
+    # def length_constraint(flat_P):
+    #     ffd.set_flat_control_points(flat_P)
+    #     optimized_vertices = ffd.deform_mesh(org_mesh_vertices)
+    #     # Ensure the body length is less than L_max
+    #     return L_max - body_length(optimized_vertices)
 
-        # Compute drag
-        drag = compute_drag(aoas, areas, lookup_table)
-
-        return drag
-
-    # Constraints: body length and volume
-    def length_constraint(flat_P):
-        ffd.set_flat_control_points(flat_P)
-        optimized_vertices = ffd.deform_mesh(org_mesh_vertices)
-        # Ensure the body length is less than L_max
-        return L_max - body_length(optimized_vertices)
-
-    def volume_constraint(flat_P):
-        ffd.set_flat_control_points(flat_P)
-        optimized_vertices = ffd.deform_mesh(org_mesh_vertices)
-        # Ensure the volume is greater than V_min
-        return body_volume(optimized_vertices, panels) - V_min
+    # def volume_constraint(flat_P):
+    #     ffd.set_flat_control_points(flat_P)
+    #     optimized_vertices = ffd.deform_mesh(org_mesh_vertices)
+    #     # Ensure the volume is greater than V_min
+    #     return body_volume(optimized_vertices, panels) - V_min
 
     # constraints = [{'type': 'ineq', 'fun': length_constraint},
     #                {'type': 'ineq', 'fun': volume_constraint}]
