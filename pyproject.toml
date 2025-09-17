@@ -15,6 +15,7 @@ dependencies = [
     "matplotlib>=3.10.6",
     "numpy>=2.3.3",
     "pandas>=2.3.2",
+    "plotly>=6.3.0",
     "pygem>=0.3.0",
     "ruff>=0.13.0",
 ]
