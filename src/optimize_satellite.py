@@ -190,7 +190,6 @@ def optimize_satellite(
                     # Center plane should have Y=0
                     ffd.P[i, j, k, 1] = 0.0
 
-
     # Create original mesh vertices (unit sphere (radius 0.5, centered at (0.5, 0.5, 0.5)))
     org_mesh_vertices, panels = create_sphere(n_phi, n_theta, radius, center)
 
