@@ -12,10 +12,10 @@ license = "MIT"
 
 requires-python = ">=3.12"
 dependencies = [
-    "matplotlib>=3.10.6",
     "numpy>=2.3.3",
     "pandas>=2.3.2",
-    "plotly>=6.3.0",
     "pygem>=0.3.0",
     "ruff>=0.13.0",
+    "scikit-optimize>=0.10.2",
+    "trimesh>=4.8.1",
 ]
