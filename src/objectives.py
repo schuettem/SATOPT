@@ -61,10 +61,56 @@ def objective_x(x, init_mesh, ffd, lookup_t, penalty_fns: list=[]):
     
     return drag
 
+def objective_y(x, init_mesh, ffd, lookup_t, penalty_fns: list=[]):
+    shape = list(ffd.array_mu_x.shape)
+    x = np.array(x)
+    x = x.reshape(shape)
+
+    ffd.array_mu_y = x[:, :, :]
+
+    new_vertices = ffd(init_mesh.vertices)
+    new_mesh = init_mesh
+    new_mesh.vertices = new_vertices
+
+    aoas, areas = compute_aoa_and_area(panels=new_mesh.faces, points=new_vertices)
+    drag = compute_drag(aoas=aoas, areas=areas, lookup_table=lookup_t)
+
+    penalty = 0
+    for peanlty_fn in penalty_fns:
+        penalty += peanlty_fn(new_mesh, 3.5, 10**2)
+        
+    drag += penalty
+    
+    return drag
+
+def objective_z(x, init_mesh, ffd, lookup_t, penalty_fns: list=[]):
+    shape = list(ffd.array_mu_x.shape)
+    x = np.array(x)
+    x = x.reshape(shape)
+
+    ffd.array_mu_z = x[:, :, :]
+
+    new_vertices = ffd(init_mesh.vertices)
+    new_mesh = init_mesh
+    new_mesh.vertices = new_vertices
+
+    aoas, areas = compute_aoa_and_area(panels=new_mesh.faces, points=new_vertices)
+    drag = compute_drag(aoas=aoas, areas=areas, lookup_table=lookup_t)
+
+    penalty = 0
+    for peanlty_fn in penalty_fns:
+        penalty += peanlty_fn(new_mesh, 3.5, 10**2)
+        
+    drag += penalty
+    
+    return drag
+
 
 OBJECTIVES = {
     "free": objective_free,
     "x": objective_x,
+    "y": objective_y,
+    "z": objective_z,
 }
 
 
@@ -105,8 +151,43 @@ def deform_mesh_x(x, mesh, ffd, lookup_t):
     return new_mesh, drag
 
 
+def deform_mesh_y(x, mesh, ffd, lookup_t):
+    shape = list(ffd.array_mu_x.shape)
+    x = np.array(x)
+    x = x.reshape(shape)
+
+    ffd.array_mu_y = x[:, :, :]
+
+    new_vertices = ffd(mesh.vertices)
+    new_mesh = mesh
+    new_mesh.vertices = new_vertices
+
+    aoas, areas = compute_aoa_and_area(panels=new_mesh.faces, points=new_vertices)
+    drag = compute_drag(aoas=aoas, areas=areas, lookup_table=lookup_t)
+
+    return new_mesh, drag
+
+
+def deform_mesh_z(x, mesh, ffd, lookup_t):
+    shape = list(ffd.array_mu_x.shape)
+    x = np.array(x)
+    x = x.reshape(shape)
+
+    ffd.array_mu_z = x[:, :, :]
+
+    new_vertices = ffd(mesh.vertices)
+    new_mesh = mesh
+    new_mesh.vertices = new_vertices
+
+    aoas, areas = compute_aoa_and_area(panels=new_mesh.faces, points=new_vertices)
+    drag = compute_drag(aoas=aoas, areas=areas, lookup_table=lookup_t)
+
+    return new_mesh, drag
+
 
 DEFORMATIONS = {
     "free": deform_mesh,
     "x": deform_mesh_x,
+    "y": deform_mesh_y,
+    "z": deform_mesh_z,
 }
