@@ -45,7 +45,7 @@ def plot_mesh_c_points(mesh, ffd):
     fig.show()
     
     
-def plot_drag(mesh, aoas):
+def plot_aoas(mesh, aoas):
     # Plot comparison
     fig = plt.figure(figsize=(12, 5))
 
