@@ -3,6 +3,7 @@ import plotly.graph_objects as go
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import matplotlib.pyplot as plt
 
+
 def plot_mesh_c_points(mesh, ffd):
     control_points = ffd.control_points().T
     vertices = mesh.vertices
@@ -43,8 +44,8 @@ def plot_mesh_c_points(mesh, ffd):
     )
 
     fig.show()
-    
-    
+
+
 def plot_aoas(mesh, aoas):
     # Plot comparison
     fig = plt.figure(figsize=(12, 5))
