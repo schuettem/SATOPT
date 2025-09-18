@@ -127,15 +127,3 @@ def compute_elementwise_drag(aoas, areas, lookup_table):
         drag_per_panel.append(drag)
 
     return drag_per_panel
-
-
-# if __name__ == "__main__":
-#     lookup_table = load_c_d_lookup_table(
-#         "~/SATOPT/aerodynamic_coefficients_panel_method.csv"
-#     )
-#     print("Drag Coefficient Lookup Table Loaded: ", lookup_table)
-#     # Test the lookup table
-#     aoa = 2
-#     wake_drag = lookup_table["wake"](aoa)
-#     ram_drag = lookup_table["ram"](aoa)
-#     print(f"AoA: {aoa}°, C_d_wake: {wake_drag:.3f}, C_d_ram: {ram_drag:.3f}")
