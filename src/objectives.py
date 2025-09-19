@@ -4,6 +4,7 @@ import trimesh
 from pygem import FFD
 import numpy as np
 
+
 def create_init_mesh_ffd(radius, n_control_points):
     cube_side = radius * 10
     mesh = trimesh.creation.icosphere(subdivisions=3, radius=radius)
@@ -15,11 +16,10 @@ def create_init_mesh_ffd(radius, n_control_points):
 
 
 def objective(flat_control_points, ffd, mesh, lookup_t, radius):
-
     mesh = trimesh.creation.icosphere(subdivisions=3, radius=radius)
 
     volume = 4.2
-    
+
     control_points = flat_control_points.reshape(ffd.control_points().shape)
 
     old_disp = []
@@ -27,15 +27,15 @@ def objective(flat_control_points, ffd, mesh, lookup_t, radius):
     old_disp.append(ffd.array_mu_y.flatten())
     old_disp.append(ffd.array_mu_z.flatten())
     old_disp = list(np.array(old_disp).T)
-    
+
     new_disp = (control_points - ffd.control_points()) / ffd.box_length
-    
-    total_disp = old_disp+new_disp
-    
+
+    total_disp = old_disp + new_disp
+
     ffd.array_mu_x = total_disp[:, 0].reshape(ffd.array_mu_x.shape)
     ffd.array_mu_y = total_disp[:, 1].reshape(ffd.array_mu_y.shape)
     ffd.array_mu_z = total_disp[:, 2].reshape(ffd.array_mu_z.shape)
-    
+
     new_vertices = ffd(mesh.vertices)
     mesh.vertices = new_vertices
 

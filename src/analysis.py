@@ -1,8 +1,7 @@
 import numpy as np
 import plotly.graph_objects as go
-from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-import matplotlib.pyplot as plt
 from matplotlib import cm
+
 
 def plot_mesh_c_points(mesh, ffd):
     control_points = ffd.control_points().T
@@ -69,33 +68,36 @@ def plot_aoas(mesh, aoas):
     colors_hex = ["rgb({},{},{})".format(r, g, b) for r, g, b in colors_rgb]
 
     # Create mesh plot
-    fig = go.Figure(data=[
-        go.Mesh3d(
-            x=x, y=y, z=z,
-            i=i, j=j, k=k,
-            facecolor=colors_hex,
-            showscale=True,
-            colorbar=dict(title="AoA per Panel"),
-            intensity=np.array(aoas),
-            intensitymode="cell",
-            colorscale="Viridis",
-            cmin=-90,
-            cmax=90,
-            name="Mesh Surface",
-            lighting=dict(ambient=1.0, diffuse=0.0, specular=0.0),
-            lightposition=dict(x=0, y=0, z=0)
-        )
-    ])
+    fig = go.Figure(
+        data=[
+            go.Mesh3d(
+                x=x,
+                y=y,
+                z=z,
+                i=i,
+                j=j,
+                k=k,
+                facecolor=colors_hex,
+                showscale=True,
+                colorbar=dict(title="AoA per Panel"),
+                intensity=np.array(aoas),
+                intensitymode="cell",
+                colorscale="Viridis",
+                cmin=-90,
+                cmax=90,
+                name="Mesh Surface",
+                lighting=dict(ambient=1.0, diffuse=0.0, specular=0.0),
+                lightposition=dict(x=0, y=0, z=0),
+            )
+        ]
+    )
 
     fig.update_layout(
         scene=dict(
-            xaxis_title="X",
-            yaxis_title="Y",
-            zaxis_title="Z",
-            aspectmode="data"
+            xaxis_title="X", yaxis_title="Y", zaxis_title="Z", aspectmode="data"
         ),
         title="Mesh Colored by Angle of Attack",
-        margin=dict(l=0, r=0, b=0, t=30)
+        margin=dict(l=0, r=0, b=0, t=30),
     )
 
     fig.show()

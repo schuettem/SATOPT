@@ -93,11 +93,11 @@ def compute_drag(aoas, areas, lookup_table):
         else:
             c_d = lookup_table["ram"](aoa)
 
-        # if np.abs(aoa) > 10.0:  
+        # if np.abs(aoa) > 10.0:
         #     c_d = 5
         # else:
         #     c_d = 0.1
-            
+
         # Ensure c_d is a valid number
         if np.isnan(c_d) or np.isinf(c_d):
             print(f"Invalid drag coefficient for AoA {aoa}°: {c_d}")

@@ -25,24 +25,48 @@ def inside_out_penalty(corners):
         V = volume_tetrahedron(corners[i], corners[j], corners[k], corners[l])
         if V < 0:
             penalty += (-V) ** 2
-            
+
     return penalty
 
 
 def trilinear_shape_derivatives(u, v, w):
     """Derivatives of the 8 shape functions wrt (u,v,w)."""
-    dN_du = np.array([
-        -(1-v)*(1-w),  -(1-v)*w,   -v*(1-w),   -v*w,
-         (1-v)*(1-w),   (1-v)*w,    v*(1-w),    v*w
-    ])
-    dN_dv = np.array([
-        -(1-u)*(1-w),  -(1-u)*w,    (1-u)*(1-w),   (1-u)*w,
-        -u*(1-w),      -u*w,        u*(1-w),       u*w
-    ])
-    dN_dw = np.array([
-        -(1-u)*(1-v),   (1-u)*(1-v),  -(1-u)*v,   (1-u)*v,
-        -u*(1-v),       u*(1-v),     -u*v,        u*v
-    ])
+    dN_du = np.array(
+        [
+            -(1 - v) * (1 - w),
+            -(1 - v) * w,
+            -v * (1 - w),
+            -v * w,
+            (1 - v) * (1 - w),
+            (1 - v) * w,
+            v * (1 - w),
+            v * w,
+        ]
+    )
+    dN_dv = np.array(
+        [
+            -(1 - u) * (1 - w),
+            -(1 - u) * w,
+            (1 - u) * (1 - w),
+            (1 - u) * w,
+            -u * (1 - w),
+            -u * w,
+            u * (1 - w),
+            u * w,
+        ]
+    )
+    dN_dw = np.array(
+        [
+            -(1 - u) * (1 - v),
+            (1 - u) * (1 - v),
+            -(1 - u) * v,
+            (1 - u) * v,
+            -u * (1 - v),
+            u * (1 - v),
+            -u * v,
+            u * v,
+        ]
+    )
     return dN_du, dN_dv, dN_dw
 
 
@@ -52,13 +76,19 @@ def orientation_constraint(flat_control_points, sample_points=None):
 
     if sample_points is None:
         sample_points = [
-            (0,0,0), (1,0,0), (0,1,0), (0,0,1),
-            (1,1,0), (1,0,1), (0,1,1), (1,1,1),
-            (0.5,0.5,0.5)
+            (0, 0, 0),
+            (1, 0, 0),
+            (0, 1, 0),
+            (0, 0, 1),
+            (1, 1, 0),
+            (1, 0, 1),
+            (0, 1, 1),
+            (1, 1, 1),
+            (0.5, 0.5, 0.5),
         ]
 
     vols = []
-    for (u, v, w) in sample_points:
+    for u, v, w in sample_points:
         dN_du, dN_dv, dN_dw = trilinear_shape_derivatives(u, v, w)
 
         dx_du = np.sum(dN_du[:, None] * cp, axis=0)
@@ -76,10 +106,10 @@ def get_nonflip_constraint():
     return NonlinearConstraint(
         orientation_constraint,
         lb=1e-4,  # strictly positive determinant
-        ub=np.inf
+        ub=np.inf,
     )
-    
-    
+
+
 def general_orientation_constraint(flat_control_points, ffd, sample_points=None):
     """
     Non-flip constraint for arbitrary FFD grid.
@@ -90,22 +120,32 @@ def general_orientation_constraint(flat_control_points, ffd, sample_points=None)
 
     if sample_points is None:
         # Default: corners + center of parametric cell
-        sample_points = [(0,0,0), (1,0,0), (0,1,0), (0,0,1),
-                         (1,1,0), (1,0,1), (0,1,1), (1,1,1),
-                         (0.5,0.5,0.5)]
+        sample_points = [
+            (0, 0, 0),
+            (1, 0, 0),
+            (0, 1, 0),
+            (0, 0, 1),
+            (1, 1, 0),
+            (1, 0, 1),
+            (0, 1, 1),
+            (1, 1, 1),
+            (0.5, 0.5, 0.5),
+        ]
 
     vols = []
 
     # Loop over all unit cells
-    for i in range(nx-1):
-        for j in range(ny-1):
-            for k in range(nz-1):
+    for i in range(nx - 1):
+        for j in range(ny - 1):
+            for k in range(nz - 1):
                 # corners of this cell
-                cell_cp = cp[i:i+2, j:j+2, k:k+2, :].reshape((8,3))  # 8 corners
+                cell_cp = cp[i : i + 2, j : j + 2, k : k + 2, :].reshape(
+                    (8, 3)
+                )  # 8 corners
 
-                for (u,v,w) in sample_points:
+                for u, v, w in sample_points:
                     # compute shape function derivatives
-                    dN_du, dN_dv, dN_dw = trilinear_shape_derivatives(u,v,w)
+                    dN_du, dN_dv, dN_dw = trilinear_shape_derivatives(u, v, w)
 
                     dx_du = np.sum(dN_du[:, None] * cell_cp, axis=0)
                     dx_dv = np.sum(dN_dv[:, None] * cell_cp, axis=0)
@@ -117,10 +157,11 @@ def general_orientation_constraint(flat_control_points, ffd, sample_points=None)
 
     return np.array(vols)
 
+
 def get_general_nonflip_constraint(ffd):
     constrain = partial(general_orientation_constraint, ffd=ffd)
     return NonlinearConstraint(
         constrain,
         lb=1e-4,  # strictly positive determinant
-        ub=np.inf
+        ub=np.inf,
     )
