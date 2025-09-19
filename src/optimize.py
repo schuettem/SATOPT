@@ -49,8 +49,8 @@ def run(radius=1):
     new_mesh = mesh
     new_mesh.vertices = new_vertices
 
-    plot_mesh_c_points(mesh, ffd)
+    plot_mesh_c_points(new_mesh, ffd)
 
     aoas, areas = compute_aoa_and_area(panels=new_mesh.faces, points=new_vertices)
-    plot_aoas(mesh, aoas)
+    plot_aoas(new_mesh, aoas)
     new_mesh.show()
