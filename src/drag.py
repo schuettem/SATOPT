@@ -89,10 +89,15 @@ def compute_drag(aoas, areas, lookup_table):
     total_drag = 0.0
     for aoa, area in zip(aoas, areas):
         if aoa < 0.0:  # Negative AoA indicates wake panel
-            c_d = lookup_table["wake"](aoa)
+            c_d = lookup_table["wake"](-aoa)
         else:
             c_d = lookup_table["ram"](aoa)
 
+        # if np.abs(aoa) > 10.0:  
+        #     c_d = 5
+        # else:
+        #     c_d = 0.1
+            
         # Ensure c_d is a valid number
         if np.isnan(c_d) or np.isinf(c_d):
             print(f"Invalid drag coefficient for AoA {aoa}°: {c_d}")
@@ -114,7 +119,7 @@ def compute_elementwise_drag(aoas, areas, lookup_table):
     drag_per_panel = []
     for aoa, area in zip(aoas, areas):
         if aoa < 0.0:  # Negative AoA indicates wake panel
-            c_d = lookup_table["wake"](aoa)
+            c_d = lookup_table["wake"](-aoa)
         else:
             c_d = lookup_table["ram"](aoa)
 

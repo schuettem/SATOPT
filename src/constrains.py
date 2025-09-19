@@ -1,49 +1,13 @@
 import numpy as np
-from scipy.optimize import LinearConstraint
-
-
-def get_flip_constrain():
-    # ----------------------------
-    # Linear constraints to avoid flips
-    # ----------------------------
-    # Example: ensure x0 < x4, x1 < x5, etc.
-    eps = 0.01
-    A = []
-    b = []
-    # x-axis constraints
-    for i, j in [(0, 4), (1, 5), (2, 6), (3, 7)]:
-        row = np.zeros(24)
-        row[i * 3 + 0] = -1  # -xi
-        row[j * 3 + 0] = 1  # +xj
-        A.append(row)
-        b.append(-eps)
-
-    # y-axis constraints
-    for i, j in [(0, 2), (1, 3), (4, 6), (5, 7)]:
-        row = np.zeros(24)
-        row[i * 3 + 1] = -1
-        row[j * 3 + 1] = 1
-        A.append(row)
-        b.append(-eps)
-
-    # z-axis constraints
-    for i, j in [(0, 1), (2, 3), (4, 5), (6, 7)]:
-        row = np.zeros(24)
-        row[i * 3 + 2] = -1
-        row[j * 3 + 2] = 1
-        A.append(row)
-        b.append(-eps)
-
-    linear_constraint = LinearConstraint(np.array(A), b, np.inf)
-
-    return linear_constraint
+from scipy.optimize import NonlinearConstraint
+from functools import partial
 
 
 def volume_penalty(min_vol, new_mesh):
     """Penalty if any tetrahedron inside cube is inverted."""
     penalty = 0
     if min_vol > new_mesh.volume:
-        penalty += 10**2
+        penalty += 1000
 
     return penalty
 
@@ -61,4 +25,102 @@ def inside_out_penalty(corners):
         V = volume_tetrahedron(corners[i], corners[j], corners[k], corners[l])
         if V < 0:
             penalty += (-V) ** 2
+            
     return penalty
+
+
+def trilinear_shape_derivatives(u, v, w):
+    """Derivatives of the 8 shape functions wrt (u,v,w)."""
+    dN_du = np.array([
+        -(1-v)*(1-w),  -(1-v)*w,   -v*(1-w),   -v*w,
+         (1-v)*(1-w),   (1-v)*w,    v*(1-w),    v*w
+    ])
+    dN_dv = np.array([
+        -(1-u)*(1-w),  -(1-u)*w,    (1-u)*(1-w),   (1-u)*w,
+        -u*(1-w),      -u*w,        u*(1-w),       u*w
+    ])
+    dN_dw = np.array([
+        -(1-u)*(1-v),   (1-u)*(1-v),  -(1-u)*v,   (1-u)*v,
+        -u*(1-v),       u*(1-v),     -u*v,        u*v
+    ])
+    return dN_du, dN_dv, dN_dw
+
+
+def orientation_constraint(flat_control_points, sample_points=None):
+    """Compute Jacobian determinant at sample points."""
+    cp = flat_control_points.reshape((8, 3))  # 8x3 array
+
+    if sample_points is None:
+        sample_points = [
+            (0,0,0), (1,0,0), (0,1,0), (0,0,1),
+            (1,1,0), (1,0,1), (0,1,1), (1,1,1),
+            (0.5,0.5,0.5)
+        ]
+
+    vols = []
+    for (u, v, w) in sample_points:
+        dN_du, dN_dv, dN_dw = trilinear_shape_derivatives(u, v, w)
+
+        dx_du = np.sum(dN_du[:, None] * cp, axis=0)
+        dx_dv = np.sum(dN_dv[:, None] * cp, axis=0)
+        dx_dw = np.sum(dN_dw[:, None] * cp, axis=0)
+
+        J = np.stack([dx_du, dx_dv, dx_dw], axis=1)
+        vol = np.linalg.det(J)
+        vols.append(vol)
+
+    return np.array(vols)
+
+
+def get_nonflip_constraint():
+    return NonlinearConstraint(
+        orientation_constraint,
+        lb=1e-4,  # strictly positive determinant
+        ub=np.inf
+    )
+    
+    
+def general_orientation_constraint(flat_control_points, ffd, sample_points=None):
+    """
+    Non-flip constraint for arbitrary FFD grid.
+    Checks Jacobian determinants of all unit cells.
+    """
+    nx, ny, nz = ffd.n_control_points
+    cp = flat_control_points.reshape((nx, ny, nz, 3))
+
+    if sample_points is None:
+        # Default: corners + center of parametric cell
+        sample_points = [(0,0,0), (1,0,0), (0,1,0), (0,0,1),
+                         (1,1,0), (1,0,1), (0,1,1), (1,1,1),
+                         (0.5,0.5,0.5)]
+
+    vols = []
+
+    # Loop over all unit cells
+    for i in range(nx-1):
+        for j in range(ny-1):
+            for k in range(nz-1):
+                # corners of this cell
+                cell_cp = cp[i:i+2, j:j+2, k:k+2, :].reshape((8,3))  # 8 corners
+
+                for (u,v,w) in sample_points:
+                    # compute shape function derivatives
+                    dN_du, dN_dv, dN_dw = trilinear_shape_derivatives(u,v,w)
+
+                    dx_du = np.sum(dN_du[:, None] * cell_cp, axis=0)
+                    dx_dv = np.sum(dN_dv[:, None] * cell_cp, axis=0)
+                    dx_dw = np.sum(dN_dw[:, None] * cell_cp, axis=0)
+
+                    J = np.stack([dx_du, dx_dv, dx_dw], axis=1)
+                    vol = np.linalg.det(J)
+                    vols.append(vol)
+
+    return np.array(vols)
+
+def get_general_nonflip_constraint(ffd):
+    constrain = partial(general_orientation_constraint, ffd=ffd)
+    return NonlinearConstraint(
+        constrain,
+        lb=1e-4,  # strictly positive determinant
+        ub=np.inf
+    )
