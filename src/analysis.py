@@ -2,7 +2,7 @@ import numpy as np
 import plotly.graph_objects as go
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import matplotlib.pyplot as plt
-
+from matplotlib import cm
 
 def plot_mesh_c_points(mesh, ffd):
     control_points = ffd.control_points().T
@@ -47,49 +47,55 @@ def plot_mesh_c_points(mesh, ffd):
 
 
 def plot_aoas(mesh, aoas):
-    # Plot comparison
-    fig = plt.figure(figsize=(12, 5))
+    """Plot mesh with faces colored by Angle of Attack using Plotly."""
 
-    # Second subplot: Surface colored by aoas
-    ax2 = fig.add_subplot(111, projection="3d")
+    # Extract vertices and faces
+    vertices = np.array(mesh.vertices)
+    faces = np.array(mesh.faces)
 
-    # Create triangles for 3D plotting
-    triangles = []
-    colors = []
-    for i, panel in enumerate(mesh.faces):
-        # Get triangle vertices
-        p1, p2, p3 = (
-            mesh.vertices[panel[0]],
-            mesh.vertices[panel[1]],
-            mesh.vertices[panel[2]],
+    # Unpack vertex coordinates
+    x, y, z = vertices[:, 0], vertices[:, 1], vertices[:, 2]
+
+    # Flatten face indices
+    i, j, k = faces[:, 0], faces[:, 1], faces[:, 2]
+
+    # Normalize AoA values to [0, 1]
+    aoa_normed = (np.array(aoas) - (-90)) / (90 - (-90))
+
+    # Map normalized AoA to Viridis colormap
+    viridis = cm.get_cmap("viridis")
+    colors_rgba = viridis(aoa_normed)
+    colors_rgb = (colors_rgba[:, :3] * 255).astype(np.uint8)
+    colors_hex = ["rgb({},{},{})".format(r, g, b) for r, g, b in colors_rgb]
+
+    # Create mesh plot
+    fig = go.Figure(data=[
+        go.Mesh3d(
+            x=x, y=y, z=z,
+            i=i, j=j, k=k,
+            facecolor=colors_hex,
+            showscale=True,
+            colorbar=dict(title="AoA per Panel"),
+            intensity=np.array(aoas),
+            intensitymode="cell",
+            colorscale="Viridis",
+            cmin=-90,
+            cmax=90,
+            name="Mesh Surface",
+            lighting=dict(ambient=1.0, diffuse=0.0, specular=0.0),
+            lightposition=dict(x=0, y=0, z=0)
         )
-        triangle = [p1, p2, p3]
-        triangles.append(triangle)
+    ])
 
-        # Color based on aoas value
-        aoa = aoas[i]
-        # norme between 0 and 1 from -90 to 90 degrees
-        aoa_normed = (aoa - np.min(aoas)) / (np.max(aoas) - np.min(aoas))
-
-        color = plt.cm.viridis(aoa_normed)  # Use colormap to get color
-        colors.append(color)
-
-    # Create 3D polygon collection
-    poly3d = Poly3DCollection(triangles, facecolors=colors, edgecolors="none")
-    ax2.add_collection3d(poly3d)
-
-    # Add colorbar for aoas values
-    sm = plt.cm.ScalarMappable(
-        cmap=plt.cm.viridis, norm=plt.Normalize(vmin=-90, vmax=90)
+    fig.update_layout(
+        scene=dict(
+            xaxis_title="X",
+            yaxis_title="Y",
+            zaxis_title="Z",
+            aspectmode="data"
+        ),
+        title="Mesh Colored by Angle of Attack",
+        margin=dict(l=0, r=0, b=0, t=30)
     )
-    sm.set_array([])
-    cbar = plt.colorbar(sm, ax=ax2, shrink=0.5, aspect=10)
-    cbar.set_label("AoA per Panel")
 
-    ax2.set_xlabel("X")
-    ax2.set_ylabel("Y")
-    ax2.set_zlabel("Z")
-
-    plt.tight_layout()
-
-    plt.show()
+    fig.show()
