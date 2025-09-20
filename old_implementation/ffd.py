@@ -1,7 +1,8 @@
 # Free Form Deformation
-import numpy as np
 from math import comb
+
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 def bernsetein(n, i, t):

@@ -1,24 +1,11 @@
-from drag import compute_drag, compute_aoa_and_area
-from constrains import volume_penalty
-import trimesh
-from pygem import FFD
 import numpy as np
 
-
-def create_init_mesh_ffd(radius, n_control_points):
-    cube_side = radius * 10
-    mesh = trimesh.creation.icosphere(subdivisions=3, radius=radius)
-    ffd = FFD(n_control_points)
-    ffd.box_length = [cube_side, cube_side, cube_side]
-    ffd.box_origin = [-cube_side / 2, -cube_side / 2, -cube_side / 2]
-
-    return mesh, ffd
+from constrains import volume_penalty
+from drag import compute_aoa_and_area
 
 
-def objective(flat_control_points, ffd, mesh, lookup_t, radius):
-    mesh = trimesh.creation.icosphere(subdivisions=3, radius=radius)
-
-    volume = 4.2
+def objective(flat_control_points, ffd, init_mesh, drag_model, min_volume):
+    mesh = init_mesh.copy()
 
     control_points = flat_control_points.reshape(ffd.control_points().shape)
 
@@ -40,12 +27,12 @@ def objective(flat_control_points, ffd, mesh, lookup_t, radius):
     mesh.vertices = new_vertices
 
     aoas, areas = compute_aoa_and_area(panels=mesh.faces, points=new_vertices)
-    drag = compute_drag(aoas=aoas, areas=areas, lookup_table=lookup_t)
+    drag = drag_model.calc_drag(aoas=aoas, areas=areas)
 
     obj = drag
 
-    # print(volume, mesh.volume)
-    obj += volume_penalty(volume, mesh)
+    obj += volume_penalty(min_volume, mesh)
+    # obj += min_box_penalty([0, 3, 3], mesh)
     # obj += inside_out_penalty(ffd.control_points())
     # p = inside_out_penalty(ffd.control_points())
 

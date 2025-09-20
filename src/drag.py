@@ -1,6 +1,22 @@
+import dataclasses
+from functools import partial
+
 import numpy as np
-import pandas as pd
-from scipy.interpolate import interp1d
+
+
+@dataclasses.dataclass
+class DragModel:
+    drag_model_name: str = "cvae"
+    drag_kwargs: dict = dataclasses.field(default_factory=dict, init=True)
+
+    def __post_init__(self):
+        # Store any extra kwargs
+        self.drag_fn = DRAGFUNCTIONS[self.drag_model_name]
+        self.drag_fn = partial(self.drag_fn, **self.drag_kwargs)
+
+    def calc_drag(self, aoas, areas):
+        drag = self.drag_fn(aoas, areas)
+        return drag
 
 
 def compute_aoa_and_area(panels, points, incident_velocity=np.array([-1, 0, 0])):
@@ -52,34 +68,7 @@ def compute_aoa_and_area(panels, points, incident_velocity=np.array([-1, 0, 0]))
     return aoas, areas
 
 
-def load_c_d_lookup_table(csv_file):
-    """
-    Load the drag coefficient lookup table from csv file
-    """
-    try:
-        df = pd.read_csv(csv_file)
-        c_d_ram_list = df["C_d_ram"].tolist()
-        c_d_wake_list = df["C_d_wake"].tolist()
-        aoa_list = df["AoA"].tolist()
-
-        ram_interpolator = interp1d(
-            aoa_list, c_d_ram_list, bounds_error=False, fill_value="extrapolate"
-        )
-        wake_interpolator = interp1d(
-            aoa_list, c_d_wake_list, bounds_error=False, fill_value="extrapolate"
-        )
-        lookup_table = {
-            "ram": ram_interpolator,
-            "wake": wake_interpolator,
-            "aoa_range": (np.min(aoa_list), np.max(aoa_list)),
-        }
-        return lookup_table
-    except Exception as e:
-        print(f"Error loading drag coefficient lookup table: {e}")
-        return []
-
-
-def compute_drag(aoas, areas, lookup_table):
+def cvae_drag(aoas, areas, lookup_table):
     """
     Compute the drag based on angle of attack and area.
     aoas: list of angles of attack in degrees.
@@ -93,12 +82,6 @@ def compute_drag(aoas, areas, lookup_table):
         else:
             c_d = lookup_table["ram"](aoa)
 
-        # if np.abs(aoa) > 10.0:
-        #     c_d = 5
-        # else:
-        #     c_d = 0.1
-
-        # Ensure c_d is a valid number
         if np.isnan(c_d) or np.isinf(c_d):
             print(f"Invalid drag coefficient for AoA {aoa}°: {c_d}")
             continue
@@ -132,3 +115,8 @@ def compute_elementwise_drag(aoas, areas, lookup_table):
         drag_per_panel.append(drag)
 
     return drag_per_panel
+
+
+DRAGFUNCTIONS = {
+    "cvae": cvae_drag,
+}

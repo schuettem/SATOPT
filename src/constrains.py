@@ -1,6 +1,57 @@
+from functools import partial
+
 import numpy as np
 from scipy.optimize import NonlinearConstraint
-from functools import partial
+
+from utils import box_from_corners
+
+
+def box_lengths(corners):
+    """
+    Given 8 vertices of a box (any orientation),
+    return the 3 side lengths.
+    """
+    corners = np.asarray(corners)
+    # take first corner as reference
+    ref = corners[0]
+
+    # compute distances to all other corners
+    dists = np.linalg.norm(corners - ref, axis=1)
+
+    # find the 3 smallest nonzero distances = edges
+    edge_lengths = np.sort(np.unique(np.round(dists[dists > 1e-8], 8)))[:3]
+
+    return edge_lengths
+
+
+def get_obb_corners(mesh):
+    obb = mesh.bounding_box_oriented
+    T = obb.primitive.transform  # 4x4 homogeneous transform
+    extents = obb.primitive.extents  # box side lengths
+
+    # Build all 8 corners in local box space
+    local_corners = (
+        np.array(
+            [
+                [-0.5, -0.5, -0.5],
+                [0.5, -0.5, -0.5],
+                [-0.5, 0.5, -0.5],
+                [0.5, 0.5, -0.5],
+                [-0.5, -0.5, 0.5],
+                [0.5, -0.5, 0.5],
+                [-0.5, 0.5, 0.5],
+                [0.5, 0.5, 0.5],
+            ]
+        )
+        * extents
+    )  # scale by box side lengths
+
+    # Convert to homogeneous coords
+    local_corners_h = np.hstack([local_corners, np.ones((8, 1))])
+
+    # Transform to world space
+    world_corners = (T @ local_corners_h.T).T[:, :3]
+    return world_corners
 
 
 def volume_penalty(min_vol, new_mesh):
@@ -12,21 +63,41 @@ def volume_penalty(min_vol, new_mesh):
     return penalty
 
 
-def volume_tetrahedron(p0, p1, p2, p3):
-    """Signed volume of a tetrahedron."""
-    return np.linalg.det(np.column_stack((p1 - p0, p2 - p0, p3 - p0))) / 6.0
-
-
-def inside_out_penalty(corners):
+def min_box_penalty(min_box, new_mesh):
     """Penalty if any tetrahedron inside cube is inverted."""
-    tets = [(0, 1, 2, 4), (1, 2, 3, 7), (1, 4, 5, 7), (2, 4, 6, 7), (1, 2, 4, 7)]
-    penalty = 0.0
-    for i, j, k, l in tets:
-        V = volume_tetrahedron(corners[i], corners[j], corners[k], corners[l])
-        if V < 0:
-            penalty += (-V) ** 2
 
+    obb_corners = get_obb_corners(new_mesh)
+    box_mesh = box_from_corners(obb_corners)
+    corners = box_mesh.vertices
+
+    lengths = box_lengths(corners)
+
+    penalty = 0
+
+    if lengths[0] < min_box[0]:
+        penalty += 100
+    if lengths[1] < min_box[1]:
+        penalty += 100
+    if lengths[2] < min_box[2]:
+        penalty += 100
     return penalty
+
+
+# def volume_tetrahedron(p0, p1, p2, p3):
+#     """Signed volume of a tetrahedron."""
+#     return np.linalg.det(np.column_stack((p1 - p0, p2 - p0, p3 - p0))) / 6.0
+
+
+# def inside_out_penalty(corners):
+#     """Penalty if any tetrahedron inside cube is inverted."""
+#     tets = [(0, 1, 2, 4), (1, 2, 3, 7), (1, 4, 5, 7), (2, 4, 6, 7), (1, 2, 4, 7)]
+#     penalty = 0.0
+#     for i, j, k, l in tets:
+#         V = volume_tetrahedron(corners[i], corners[j], corners[k], corners[l])
+#         if V < 0:
+#             penalty += (-V) ** 2
+
+#     return penalty
 
 
 def trilinear_shape_derivatives(u, v, w):
@@ -70,44 +141,44 @@ def trilinear_shape_derivatives(u, v, w):
     return dN_du, dN_dv, dN_dw
 
 
-def orientation_constraint(flat_control_points, sample_points=None):
-    """Compute Jacobian determinant at sample points."""
-    cp = flat_control_points.reshape((8, 3))  # 8x3 array
+# def orientation_constraint(flat_control_points, sample_points=None):
+#     """Compute Jacobian determinant at sample points."""
+#     cp = flat_control_points.reshape((8, 3))  # 8x3 array
 
-    if sample_points is None:
-        sample_points = [
-            (0, 0, 0),
-            (1, 0, 0),
-            (0, 1, 0),
-            (0, 0, 1),
-            (1, 1, 0),
-            (1, 0, 1),
-            (0, 1, 1),
-            (1, 1, 1),
-            (0.5, 0.5, 0.5),
-        ]
+#     if sample_points is None:
+#         sample_points = [
+#             (0, 0, 0),
+#             (1, 0, 0),
+#             (0, 1, 0),
+#             (0, 0, 1),
+#             (1, 1, 0),
+#             (1, 0, 1),
+#             (0, 1, 1),
+#             (1, 1, 1),
+#             (0.5, 0.5, 0.5),
+#         ]
 
-    vols = []
-    for u, v, w in sample_points:
-        dN_du, dN_dv, dN_dw = trilinear_shape_derivatives(u, v, w)
+#     vols = []
+#     for u, v, w in sample_points:
+#         dN_du, dN_dv, dN_dw = trilinear_shape_derivatives(u, v, w)
 
-        dx_du = np.sum(dN_du[:, None] * cp, axis=0)
-        dx_dv = np.sum(dN_dv[:, None] * cp, axis=0)
-        dx_dw = np.sum(dN_dw[:, None] * cp, axis=0)
+#         dx_du = np.sum(dN_du[:, None] * cp, axis=0)
+#         dx_dv = np.sum(dN_dv[:, None] * cp, axis=0)
+#         dx_dw = np.sum(dN_dw[:, None] * cp, axis=0)
 
-        J = np.stack([dx_du, dx_dv, dx_dw], axis=1)
-        vol = np.linalg.det(J)
-        vols.append(vol)
+#         J = np.stack([dx_du, dx_dv, dx_dw], axis=1)
+#         vol = np.linalg.det(J)
+#         vols.append(vol)
 
-    return np.array(vols)
+#     return np.array(vols)
 
 
-def get_nonflip_constraint():
-    return NonlinearConstraint(
-        orientation_constraint,
-        lb=1e-4,  # strictly positive determinant
-        ub=np.inf,
-    )
+# def get_nonflip_constraint():
+#     return NonlinearConstraint(
+#         orientation_constraint,
+#         lb=1e-4,  # strictly positive determinant
+#         ub=np.inf,
+#     )
 
 
 def general_orientation_constraint(flat_control_points, ffd, sample_points=None):

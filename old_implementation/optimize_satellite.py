@@ -1,14 +1,9 @@
 import numpy as np
-
+from satopt.bla.body import body_length, body_volume, create_sphere
+# Import from drag.py
+from satopt.bla.drag import compute_aoa_and_area, compute_drag
 # Import ffd.py from the same directory
 from satopt.bla.ffd import FFD
-
-# Import from drag.py
-from satopt.bla.drag import (
-    compute_aoa_and_area,
-    compute_drag,
-)
-from satopt.bla.body import body_length, body_volume, create_sphere
 
 
 def genetic_algorithm(
