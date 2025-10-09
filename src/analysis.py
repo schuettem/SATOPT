@@ -2,6 +2,7 @@ import numpy as np
 import plotly.graph_objects as go
 from matplotlib import cm
 
+
 def plot_mesh_c_points(mesh, ffd):
     control_points = ffd.control_points().T
     vertices = mesh.vertices
