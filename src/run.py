@@ -8,7 +8,7 @@ from drag import compute_aoa_and_area
 from objectives import objective
 
 
-def run(drag_model, init_mesh, ffd, min_volume=0, opt_bond=None):
+def run(drag_model, init_mesh, ffd, max_iter=500, min_volume=0, opt_bond=None):
     mesh = init_mesh.copy()
 
     control_points = ffd.control_points()
@@ -33,7 +33,7 @@ def run(drag_model, init_mesh, ffd, min_volume=0, opt_bond=None):
             method="SLSQP",
             constraints=[nonlinear_constraint],
             bounds=opt_bond,
-            options={"ftol": 1e-6, "disp": True, "maxiter": 500},
+            options={"ftol": 1e-6, "disp": True, "maxiter": max_iter},
         )
         print(i)
 
@@ -57,7 +57,7 @@ def get_final_mesh(drag_model, control_points, ffd, init_mesh):
     aoas, areas = compute_aoa_and_area(panels=init_mesh.faces, points=new_vertices)
     drags = []
     for (aoa, area) in zip(aoas, areas):
-        drags.append(drag_model.calc_drag(aoas=[aoa], areas=[area])[0])
+        drags.append(drag_model.calc_drag(aoas=[aoa], areas=[area]))
 
     plot_aoas(init_mesh, aoas)
     plot_drag(init_mesh, drags)
