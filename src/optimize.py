@@ -3,8 +3,8 @@ from pygem import FFD
 from drag import load_c_d_lookup_table
 from scipy.optimize import minimize
 from objectives import objective
-from drag import compute_aoa_and_area
-from analysis import plot_mesh_c_points, plot_aoas
+from drag import compute_aoa_and_area, compute_elementwise_drag
+from analysis import plot_mesh_c_points, plot_aoas, plot_drag, plot_area
 from constrains import get_flip_constrain
 import os
 
@@ -52,5 +52,9 @@ def run(radius=1):
     plot_mesh_c_points(new_mesh, ffd)
 
     aoas, areas = compute_aoa_and_area(panels=new_mesh.faces, points=new_vertices)
+    drags = compute_elementwise_drag(aoas, areas, lookup_t)
+    print(aoas)
     plot_aoas(new_mesh, aoas)
+    plot_drag(new_mesh, drags)
+    plot_area(new_mesh, areas)
     new_mesh.show()

@@ -89,7 +89,7 @@ def compute_drag(aoas, areas, lookup_table):
     total_drag = 0.0
     for aoa, area in zip(aoas, areas):
         if aoa < 0.0:  # Negative AoA indicates wake panel
-            c_d = lookup_table["wake"](aoa)
+            c_d = lookup_table["wake"](-aoa)
         else:
             c_d = lookup_table["ram"](aoa)
 
@@ -114,7 +114,7 @@ def compute_elementwise_drag(aoas, areas, lookup_table):
     drag_per_panel = []
     for aoa, area in zip(aoas, areas):
         if aoa < 0.0:  # Negative AoA indicates wake panel
-            c_d = lookup_table["wake"](aoa)
+            c_d = lookup_table["wake"](-aoa)
         else:
             c_d = lookup_table["ram"](aoa)
 

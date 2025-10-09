@@ -97,3 +97,111 @@ def plot_aoas(mesh, aoas):
     )
 
     fig.show()
+
+
+def plot_drag(mesh, drags):
+    # Extract vertices and faces
+    vertices = np.array(mesh.vertices)
+    faces = np.array(mesh.faces)
+
+    # Unpack vertex coordinates
+    x, y, z = vertices[:, 0], vertices[:, 1], vertices[:, 2]
+
+    # Flatten face indices
+    i, j, k = faces[:, 0], faces[:, 1], faces[:, 2]
+
+    # Normalize drag values to [0, 1]
+    drag_normed = (np.array(drags) - np.min(drags)) / (np.max(drags) - np.min(drags) + 1e-8)
+
+    # Map normalized drag to Viridis colormap
+    viridis = cm.get_cmap("viridis")
+    colors_rgba = viridis(drag_normed)
+    colors_rgb = (colors_rgba[:, :3] * 255).astype(np.uint8)
+    colors_hex = ["rgb({},{},{})".format(r, g, b) for r, g, b in colors_rgb]
+
+        # Create mesh plot
+    fig = go.Figure(data=[
+        go.Mesh3d(
+            x=x, y=y, z=z,
+            i=i, j=j, k=k,
+            facecolor=colors_hex,
+            showscale=True,
+            colorbar=dict(title="Drag per Panel"),
+            intensity=np.array(drags),
+            intensitymode="cell",
+            colorscale="Viridis",
+            cmin=np.min(drags),
+            cmax=np.max(drags),
+            name="Mesh Surface",
+            lighting=dict(ambient=1.0, diffuse=0.0, specular=0.0),
+            lightposition=dict(x=0, y=0, z=0)
+        )
+    ])
+
+    fig.update_layout(
+        scene=dict(
+            xaxis_title="X",
+            yaxis_title="Y",
+            zaxis_title="Z",
+            aspectmode="data"
+        ),
+        title="Mesh Colored by Drag",
+        margin=dict(l=0, r=0, b=0, t=30)
+    )
+
+    fig.show()
+
+
+def plot_area(mesh, areas):
+    """Plot mesh with faces colored by Area using Plotly."""
+
+    # Extract vertices and faces
+    vertices = np.array(mesh.vertices)
+    faces = np.array(mesh.faces)
+
+    # Unpack vertex coordinates
+    x, y, z = vertices[:, 0], vertices[:, 1], vertices[:, 2]
+
+    # Flatten face indices
+    i, j, k = faces[:, 0], faces[:, 1], faces[:, 2]
+
+    # Normalize area values to [0, 1]
+    area_normed = (np.array(areas) - np.min(areas)) / (np.max(areas) - np.min(areas) + 1e-8)
+
+    # Map normalized area to Viridis colormap
+    viridis = cm.get_cmap("viridis")
+    colors_rgba = viridis(area_normed)
+    colors_rgb = (colors_rgba[:, :3] * 255).astype(np.uint8)
+    colors_hex = ["rgb({},{},{})".format(r, g, b) for r, g, b in colors_rgb]
+
+    # Create mesh plot
+    fig = go.Figure(data=[
+        go.Mesh3d(
+            x=x, y=y, z=z,
+            i=i, j=j, k=k,
+            facecolor=colors_hex,
+            showscale=True,
+            colorbar=dict(title="Area per Panel"),
+            intensity=np.array(areas),
+            intensitymode="cell",
+            colorscale="Viridis",
+            cmin=np.min(areas),
+            cmax=np.max(areas),
+            name="Mesh Surface",
+            lighting=dict(ambient=1.0, diffuse=0.0, specular=0.0),
+            lightposition=dict(x=0, y=0, z=0)
+        )
+    ])
+
+    fig.update_layout(
+        scene=dict(
+            xaxis_title="X",
+            yaxis_title="Y",
+            zaxis_title="Z",
+            aspectmode="data"
+        ),
+        title="Mesh Colored by Area",
+        margin=dict(l=0, r=0, b=0, t=30)
+    )
+
+    fig.show()
